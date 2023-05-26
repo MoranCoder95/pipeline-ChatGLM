@@ -2,9 +2,13 @@
 
 # 介绍
 🤖️ 利用 [ChatGLM-6B](https://github.com/THUDM/ChatGLM-6B) + [pipelines](https://github.com/PaddlePaddle) 实现的基于本地知识的 ChatGLM 应用。
+
 -高效的本地查询：充分利用百度NLP能力并不断集成其他NLP能力；
+
 -可定制性：基于流水线系统的本地知识库可以根据具体需求进行高度定制；
+
 -方便展示：内置UI界面方便展示；
+
 -代码清晰：相对其他实现本项目代码逻辑清晰明了。
 
 
