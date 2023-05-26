@@ -45,7 +45,7 @@
   - [ ] ChatGPT API 接入
 - [ ] Demo
   - [ ] 本地pdf知识库(>1G)下ChatGLM问答
-  - [ ] 
+  - [ ] 模型微调
 - [ ] 增加更多 LLM 模型支持
   - [x] [THUDM/chatglm-6b](https://huggingface.co/THUDM/chatglm-6b)
   - [x] [THUDM/chatglm-6b-int8](https://huggingface.co/THUDM/chatglm-6b-int8)
