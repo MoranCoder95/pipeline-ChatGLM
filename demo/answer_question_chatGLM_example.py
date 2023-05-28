@@ -20,12 +20,9 @@ from pipelines.nodes import GLMNode
 
 # yapf: disable
 parser = argparse.ArgumentParser()
-# parser.add_argument('--device', choices=['cpu', 'gpu'], default="gpu", help="Select which device to run dense_qa system, defaults to gpu.")
 parser.add_argument("--model_path", default='THUDM/chatglm-6b-int4-qe', type=str, help="The ann index name of ANN.")
 args = parser.parse_args()
 # yapf: enable
-
-
 
 class ChatInterface:
     def __init__(self, model_path):
@@ -36,8 +33,6 @@ class ChatInterface:
         result, _ = self.glm_node.run(query=message, history=self.history)
         self.history = result["history"]
         return result["response"]
-
-
 def main():
     chat_interface = ChatInterface(model_path=args.model_path)
 
@@ -45,8 +40,13 @@ def main():
         fn=chat_interface.chat,
         inputs=gr.inputs.Textbox(lines=2, label="Your question"),
         outputs=gr.outputs.Textbox(label="GLM's response"),
+        examples=[
+            ["pipeline-ChatGLM:流水线系统(pipeline)构建本地知识库的ChatGLM问答系统实现"],
+            ["交流&问答群：835323155"],
+        ],
     )
     iface.launch()
+
 
 if __name__ == "__main__":
     main()

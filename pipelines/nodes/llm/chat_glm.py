@@ -70,7 +70,8 @@ class GLMNode(BaseComponent):
         #     else:
         #         raise ValueError("Invalid history: an even number of `messages` is expected!")
 
-
+        if history is None:
+            history = []
 
         history.append({"role": "user", "content": f"{query}"})
 

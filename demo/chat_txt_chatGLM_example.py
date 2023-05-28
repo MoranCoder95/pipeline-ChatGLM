@@ -12,36 +12,61 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 import argparse
 import os
 import gradio as gr
+import glob
 from pipelines.document_stores import FAISSDocumentStore, MilvusDocumentStore
-from pipelines.nodes import DensePassageRetriever, ErnieRanker
+import time
 from pipelines.utils import (
     convert_files_to_dicts,
     fetch_archive_from_http,
     print_documents,
 )
+from pipelines.document_stores import ElasticsearchDocumentStore
+from pipelines.nodes import (
+    CharacterTextSplitter,
+    ChatGLMBot,
+    DensePassageRetriever,
+    ErnieBot,
+    ErnieRanker,
+    GLMNode,
+    PDFToTextConverter,
+    PromptTemplate,
+)
+from pipelines.pipelines import Pipeline
 
 # yapf: disable
 parser = argparse.ArgumentParser()
-parser.add_argument('--device', choices=['cpu', 'gpu'], default="gpu", help="Select which device to run dense_qa system, defaults to gpu.")
+parser.add_argument("--model_path", default='THUDM/chatglm-6b-int4-qe', type=str, help="The ann index name of ANN.")
+parser.add_argument('--device', choices=['cpu', 'gpu'], default="gpu",
+                    help="Select which device to run dense_qa system, defaults to gpu.")
 parser.add_argument("--index_name", default='dureader_index', type=str, help="The ann index name of ANN.")
-parser.add_argument("--search_engine", choices=['faiss', 'milvus'], default="faiss", help="The type of ANN search engine.")
-parser.add_argument("--max_seq_len_query", default=64, type=int, help="The maximum total length of query after tokenization.")
-parser.add_argument("--max_seq_len_passage", default=256, type=int, help="The maximum total length of passage after tokenization.")
-parser.add_argument("--retriever_batch_size", default=16, type=int, help="The batch size of retriever to extract passage embedding for building ANN index.")
-parser.add_argument("--query_embedding_model", default="rocketqa-zh-nano-query-encoder", type=str, help="The query_embedding_model path")
-parser.add_argument("--passage_embedding_model", default="rocketqa-zh-nano-query-encoder", type=str, help="The passage_embedding_model path")
-parser.add_argument("--params_path", default="checkpoints/model_40/model_state.pdparams", type=str, help="The checkpoint path")
+parser.add_argument("--search_engine", choices=['faiss', 'milvus'], default="faiss",
+                    help="The type of ANN search engine.")
+parser.add_argument("--max_seq_len_query", default=64, type=int,
+                    help="The maximum total length of query after tokenization.")
+parser.add_argument("--max_seq_len_passage", default=256, type=int,
+                    help="The maximum total length of passage after tokenization.")
+parser.add_argument("--retriever_batch_size", default=16, type=int,
+                    help="The batch size of retriever to extract passage embedding for building ANN index.")
+parser.add_argument("--query_embedding_model", default="rocketqa-zh-nano-query-encoder", type=str,
+                    help="The query_embedding_model path")
+parser.add_argument("--passage_embedding_model", default="rocketqa-zh-nano-query-encoder", type=str,
+                    help="The passage_embedding_model path")
+parser.add_argument("--params_path", default="checkpoints/model_40/model_state.pdparams", type=str,
+                    help="The checkpoint path")
 parser.add_argument("--embedding_dim", default=312, type=int, help="The embedding_dim of index")
 parser.add_argument('--host', type=str, default="localhost", help='host ip of ANN search engine')
 parser.add_argument('--port', type=str, default="8530", help='port of ANN search engine')
 parser.add_argument('--embed_title', default=False, type=bool, help="The title to be  embedded into embedding")
-parser.add_argument('--model_type', choices=['ernie_search', 'ernie', 'bert', 'neural_search'], default="ernie", help="the ernie model types")
+parser.add_argument('--model_type', choices=['ernie_search', 'ernie', 'bert', 'neural_search'], default="ernie",
+                    help="the ernie model types")
 args = parser.parse_args()
-# yapf: enable
 
+
+# yapf: enable
 
 def get_faiss_retriever(use_gpu):
     faiss_document_store = "faiss_document_store.db"
@@ -94,8 +119,9 @@ def get_faiss_retriever(use_gpu):
         # save index
         document_store.save(args.index_name)
     return retriever
-def get_milvus_retriever(use_gpu):
 
+
+def get_milvus_retriever(use_gpu):
     milvus_document_store = "milvus_document_store.db"
     if os.path.exists(milvus_document_store):
         document_store = MilvusDocumentStore(
@@ -152,46 +178,44 @@ def get_milvus_retriever(use_gpu):
 
     return retriever
 
-class SemanticSearch:
-    def __init__(self):
-        self.pipe = None
 
-    def setup(self):
+class ChatInterface:
+    def __init__(self, model_path, args):
         use_gpu = True if args.device == "gpu" else False
 
-        # retriever
+        self.glm_node = GLMNode(model_path)
+        self.history = []
+
         if args.search_engine == "milvus":
-            retriever = get_milvus_retriever(use_gpu)
+            self.retriever = get_milvus_retriever(use_gpu)
         else:
-            retriever = get_faiss_retriever(use_gpu)
+            self.retriever = get_faiss_retriever(use_gpu)
 
-        # Ranker
-        ranker = ErnieRanker(model_name_or_path="rocketqa-zh-dureader-cross-encoder", use_gpu=use_gpu)
+        self.ranker = ErnieRanker(model_name_or_path="rocketqa-zh-dureader-cross-encoder", use_gpu=use_gpu)
 
-        # Pipeline
-        from pipelines import SemanticSearchPipeline
+        self.query_pipeline = Pipeline()
+        self.query_pipeline.add_node(component=self.retriever, name="Retriever", inputs=["Query"])
+        self.query_pipeline.add_node(component=self.ranker, name="Ranker", inputs=["Retriever"])
+        self.query_pipeline.add_node(
+            component=PromptTemplate("请根据以下背景资料回答问题：\n 背景资料：{documents} \n问题：{query}"),
+            name="Template", inputs=["Ranker"]
+        )
+        self.query_pipeline.add_node(component=self.glm_node, name="GLMNode", inputs=["Template"])
 
-        self.pipe = SemanticSearchPipeline(retriever, ranker)
-
-    def create_interface(self, query, top_k_retriever, top_k_ranker):
-        prediction = self.pipe.run(query=query,
-                                   params={"Retriever": {"top_k": top_k_retriever},
-                                           "Ranker": {"top_k": top_k_ranker}})
-        return str(prediction)
-
+    def chat(self, message):
+        prediction = self.query_pipeline.run(query=message, params={"Retriever": {"top_k": 10}, "Ranker": {"top_k": 2}})
+        result = prediction["response"]
+        documents = '\n'.join([doc.content for doc in prediction["documents"]])
+        self.history.append({"role": "system", "content": message})
+        self.history.append({"role": "user", "content": result})
+        return [result,documents]
 
 def main():
-    search = SemanticSearch()
-    search.setup()
-
+    chat_interface = ChatInterface(model_path=args.model_path, args=args)
     iface = gr.Interface(
-        fn=search.create_interface,
-        inputs=[
-            gr.inputs.Textbox(lines=2, label="Query"),
-            gr.inputs.Slider(minimum=1, maximum=50, step=1, default=10, label="Top K Retriever"),
-            gr.inputs.Slider(minimum=1, maximum=50, step=1, default=5, label="Top K Ranker"),
-        ],
-        outputs=gr.outputs.Textbox(label="Search Results"),
+        fn= chat_interface.chat,
+        inputs=gr.inputs.Textbox(lines=2, label="Your question"),
+        outputs= [gr.outputs.Textbox(label="Search Results"), gr.outputs.Textbox(label="Documents")],
         examples=[
             ["pipeline-ChatGLM:流水线系统(pipeline)构建本地知识库的ChatGLM问答系统实现"],
             ["交流&问答群：835323155"],
@@ -199,17 +223,6 @@ def main():
     )
     iface.launch()
 
+
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
-
-
-
