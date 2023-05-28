@@ -1,0 +1,1 @@
+session的超时时间设置settings中SESSION_COOKIE_AGE=60*30 30分钟。SESSION_EXPIRE_AT_BROWSER_CLOSE False:会话cookie可以在用户浏览器中保持有效期。True:关闭浏览器,则Cookie失效。SESSION_COOKIE_DOMAIN 生效站点SESSION_COOKIE_NAME cookie中保存session的名称Session使用比较简单,在request.session是一个字典类。session是保存在数据库中的。

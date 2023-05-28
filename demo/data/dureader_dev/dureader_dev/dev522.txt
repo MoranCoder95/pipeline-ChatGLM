@@ -1,0 +1,1 @@
+中文字体名 英文字体名文件名 PS name 汉字数 方正粗圆简体FZCuYuan-M03S FZY4JW FZY4JW—GB1-0 7156 下载个方正粗圆简体字体，拷贝到系统盘 WINDOWS/fonts文件夹中，直接就可以用方正粗圆简体字体下载：http://sc.jcwcn.com/tx/Font/Font3003.htm

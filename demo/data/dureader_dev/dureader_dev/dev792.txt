@@ -1,0 +1,1 @@
+1.vim/etc/init.d/rpcbind里面有说明2.他是一个RPC服务,主要是在nfs共享时候负责通知客户端,服务器的nfs端口号的。简单理解rpc就是一个中介服务。3./etc/init.d/rpcbind是开启rpc服务的命令

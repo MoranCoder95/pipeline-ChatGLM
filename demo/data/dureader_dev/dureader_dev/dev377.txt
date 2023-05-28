@@ -1,0 +1,1 @@
+Iris Graphics 6100 是集成在笔记本CPU和核心显卡 性能并不强 性能与定位入门级的GT820M相似 大多数大型3D游戏可以低画质运行 另外多说一句 目前Intel最高级的核心显卡 Iris Pro Graphics 6200 的性能可以与GT750M相媲美

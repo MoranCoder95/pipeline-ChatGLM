@@ -1,0 +1,1 @@
+电脑编程员工工资3000到9000不等，这个需要取决员工的能力。编辑程序让电脑执行的过程就叫编程 很多软件都可以编程 具有代表性的计算机语言有Java，BASIC C，C++，VB，VF，SQL,网页编程JSP，ASP，PHP ，软件是eclipse，Microsoft Visual Studio,Microsoft Visual Basic,Microsoft SQL Server,等等。Java是目前应用最广泛的编程语言之一，大学中则常常以C语言作为编程的入门语言， BASIC是Beginner's All-purpose symbolic instruction Code（初学者通用符号指令代码）的缩写，是国际上广泛使用的一种计算机高级语言。BASIC简单、易学，目前仍是计算机入门的主要学习语言之一。

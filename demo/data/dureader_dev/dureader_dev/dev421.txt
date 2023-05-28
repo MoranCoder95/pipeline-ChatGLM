@@ -1,0 +1,1 @@
+DownloadSDKServer.exe其实是迅雷9的一个后台程序,相当于以前使用迅雷7和迅雷极速版的常驻程序Thunderplatform.exe,其功能就是在后台实现上传,是迅雷9非常重要的一个核心程序。

@@ -1,0 +1,1 @@
+MAC系统默认截图生成的文件全都保存在桌面上1、更改保存位置的方法： 打开“终端”（应用程序-》实用工具），输入以下命令：（USERNAME为用你的用户名替换掉） defaultswritecom.apple.screencapturelocation /Users/USERNAME/Documents//Users/USERNAME/Documents（Documents就是你想要设定的文件保存路径，如果不喜欢放到“Documents”里，也可以自己设定。）\x092、恢复系统默认设置 打开“终端”（应用程序-》实用工具），输入以下命令： defaults delete com.apple.screencapture location

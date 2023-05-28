@@ -1,0 +1,1 @@
+1.7以上，用summon指令。代码如下:/summon Minecart ~ ~ ~ {Riding:{id:EnderDragon}}坐上矿车就可以骑龙了,可惜不能控制。如果想控制请下载龙骑士mod。
