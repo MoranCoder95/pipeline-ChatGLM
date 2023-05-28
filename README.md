@@ -2,9 +2,13 @@
 
 # 介绍
 🤖️ 利用 [ChatGLM-6B](https://github.com/THUDM/ChatGLM-6B) + [pipelines](https://github.com/PaddlePaddle) 实现的基于本地知识的 ChatGLM 应用。
+
 -高效的本地查询：充分利用百度NLP能力并不断集成其他NLP能力；
+
 -可定制性：基于流水线系统的本地知识库可以根据具体需求进行高度定制；
+
 -方便展示：内置UI界面方便展示；
+
 -代码清晰：相对其他实现本项目代码逻辑清晰明了。
 
 
@@ -41,7 +45,7 @@
   - [ ] ChatGPT API 接入
 - [ ] Demo
   - [ ] 本地pdf知识库(>1G)下ChatGLM问答
-  - [ ] 
+  - [ ] 模型微调
 - [ ] 增加更多 LLM 模型支持
   - [x] [THUDM/chatglm-6b](https://huggingface.co/THUDM/chatglm-6b)
   - [x] [THUDM/chatglm-6b-int8](https://huggingface.co/THUDM/chatglm-6b-int8)
@@ -59,10 +63,9 @@
 
 ## 常见问题
 
-🎉 pipeline-ChatGLM 项目还在不断完善，如果你也对本项目感兴趣，欢迎讨论交流。
+🎉 pipeline-ChatGLM 项目还在不断完善，如果你也对本项目感兴趣，欢迎讨论交流。 
 
 交流&问答群：835323155
-
 
 
 
