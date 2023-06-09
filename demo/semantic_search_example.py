@@ -16,7 +16,7 @@ import argparse
 import os
 import gradio as gr
 from pipelines.document_stores import FAISSDocumentStore, MilvusDocumentStore
-from pipelines.nodes import DensePassageRetriever, ErnieRanker
+from pipelines.nodes import DensePassageRetriever, BM25Retriever,ErnieRanker
 from pipelines.utils import (
     convert_files_to_dicts,
     fetch_archive_from_http,
@@ -87,6 +87,7 @@ def get_faiss_retriever(use_gpu):
             use_gpu=use_gpu,
             embed_title=args.embed_title,
         )
+
 
         # update Embedding
         document_store.update_embeddings(retriever)

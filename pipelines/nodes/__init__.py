@@ -31,11 +31,12 @@ from pipelines.nodes.file_converter import (
     PDFToTextOCRConverter,
     TextConverter,
 )
+from pipelines.nodes.file_converter.pdf import PDFToTextGROBIDConverter,PDFPlumberToTextConverter,PDFToTextImgOCRConverter
 from pipelines.nodes.llm import ChatGLMBot
 from pipelines.nodes.llm.ernie_bot import ErnieBot
 from pipelines.nodes.llm.chat_glm import GLMNode
 from pipelines.nodes.llm.history import TruncatedConversationHistory
-from pipelines.nodes.llm.prompt_template import PromptTemplate
+from pipelines.nodes.prompt import PromptTemplate,FewShotPromptTemplate,CoTPromptTemplate
 from pipelines.nodes.other import JoinDocuments
 from pipelines.nodes.preprocessor import (
     BasePreProcessor,
@@ -58,3 +59,5 @@ from pipelines.nodes.sentiment_analysis import (
     UIESenta,
 )
 from pipelines.nodes.text_to_image_generator import ErnieTextToImageGenerator
+
+from pipelines.nodes.memory.chat_memory import ChatHistory,ChatRefHistory

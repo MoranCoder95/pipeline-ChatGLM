@@ -16,9 +16,10 @@
 import logging
 import os
 import tempfile
-from pathlib import Path
 from typing import Any, Dict, List, Optional
-
+from pathlib import Path
+from grobid.client import GrobidClient
+from lxml import etree
 import pdfplumber
 
 try:
@@ -65,6 +66,7 @@ class PDFToTextConverter(BaseConverter):
         remove_numeric_tables: Optional[bool] = None,
         valid_languages: Optional[List[str]] = None,
         language: Optional[str] = "en",
+        encoding: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
         Extract text from a .pdf file using the pdftotext library (https://www.xpdfreader.com/pdftotext-man.html)
@@ -150,7 +152,6 @@ class PDFToTextConverter(BaseConverter):
             page_text.append(paragraphs)
         return page_text
 
-
 class PDFToTextOCRConverter(BaseConverter):
     def __init__(
         self,
@@ -211,7 +212,7 @@ class PDFToTextOCRConverter(BaseConverter):
             images = convert_from_path(file_path)
             for image in images:
                 temp_img = tempfile.NamedTemporaryFile(
-                    dir=os.path.dirname(os.path.realpath(__file__)), suffix=".jpeg", delete=False
+                    dir=os.path.dirname(os.path.realpath(__file__)), suffix=".jpg", delete=False
                 )
                 image.save(temp_img.name)
                 pages.append(self.image_2_text.convert(temp_img.name)[0]["content"])
@@ -224,3 +225,157 @@ class PDFToTextOCRConverter(BaseConverter):
         document = {"content": raw_text, "meta": meta}
 
         return [document]
+
+class PDFPlumberToTextConverter:
+    def __init__(self):
+        pass
+
+    def convert(self, file_path: Path, meta: Optional[Dict[str, str]] = None) -> List[Dict[str, Any]]:
+        """
+        Extract text from a .pdf file using the pdfplumber library
+
+        :param file_path: Path to the .pdf file you want to convert
+        :param meta: Optional dictionary with metadata that shall be attached to all resulting documents.
+                     Can be any custom keys and values.
+        """
+        pages = self._read_pdf(file_path)
+        text = "\f".join(pages)
+        document = {"content": text, "content_type": "text", "meta": meta}
+        return [document]
+
+    def _read_pdf(self, file_path: Path) -> List[str]:
+        """
+        Extract pages from the pdf file at file_path.
+
+        :param file_path: path of the pdf file
+        """
+        with pdfplumber.open(file_path) as pdf:
+            page_text = []
+            for page in pdf.pages:
+                paragraphs = page.extract_text()
+                if paragraphs:
+                    page_text.append(paragraphs)
+            return page_text
+
+class PDFToTextGROBIDConverter(BaseConverter):
+    def __init__(
+            self,
+            grobid_host: str = "localhost",
+            grobid_port: int = 8080,
+            remove_numeric_tables: bool = False,
+            valid_languages: Optional[List[str]] = None,
+    ):
+        """
+        :param grobid_host: The host address of the running GROBID service.
+        :param grobid_port: The port number of the running GROBID service.
+        :param remove_numeric_tables: This option uses heuristics to remove numeric rows from the tables.
+                                      The tabular structures in documents might be noise for the reader model if it
+                                      does not have table parsing capability for finding answers. However, tables
+                                      may also have long strings that could possible candidate for searching answers.
+                                      The rows containing strings are thus retained in this option.
+        :param valid_languages: validate languages from a list of languages specified in the ISO 639-1
+                                (https://en.wikipedia.org/wiki/ISO_639-1) format.
+                                This option can be used to add test for encoding errors. If the extracted text is
+                                not one of the valid languages, then it might likely be encoding error resulting
+                                in garbled text.
+        """
+        # save init parameters to enable export of component config as YAML
+        self.set_config(grobid_host=grobid_host, grobid_port=grobid_port, remove_numeric_tables=remove_numeric_tables,
+                        valid_languages=valid_languages)
+
+        super().__init__(remove_numeric_tables=remove_numeric_tables, valid_languages=valid_languages)
+        self.grobid_client = GrobidClient(host=grobid_host, port=grobid_port)
+
+    def convert(
+            self,
+            file_path: Path,
+            meta: Optional[Dict[str, str]] = None,
+            remove_numeric_tables: Optional[bool] = None,
+            valid_languages: Optional[List[str]] = None,
+            encoding: Optional[str] = "utf-8",
+    ) -> List[Dict[str, Any]]:
+        """
+        Extract text from a .pdf file using the GROBID service.
+
+        :param file_path: Path to the .pdf file you want to convert
+        :param meta: Optional dictionary with metadata that shall be attached to all resulting documents.
+                     Can be any custom keys and values.
+        :param remove_numeric_tables: This option uses heuristics to remove numeric rows from the tables.
+                                      The tabular structures in documents might be noise for the reader model if it
+                                      does not have table parsing capability for finding answers. However, tables
+                                      may also have long strings that could possible candidate for searching answers.
+                                      The rows containing strings are thus retained in this option.
+        :param valid_languages: validate languages from a list of languages specified in the ISO 639-1
+                                (https://en.wikipedia.org/wiki/ISO_639-1) format.
+                                This option can be used to add test for encoding errors. If the extracted text is
+                                not one of the valid_languages, then it might likely be encoding error resulting
+                                in garbled text.
+        :param encoding: Select the file encoding (default is `utf-8`)
+        """
+        with open(file_path, "rb") as file:
+            # Use GROBID service to parse the PDF
+            parsed_pdf = self.grobid_client.serve(service ='processFulltextDocument',pdf_file=file)
+
+        converted_text_str = parsed_pdf[0].text.replace('<?xml version="1.0" encoding="UTF-8"?>', '')
+
+        root = etree.fromstring(converted_text_str)
+        text = ''.join(root.itertext())
+        # Create the output document
+        doc = {
+            "content": text,
+            "meta": meta if meta else {},
+            "content_type": "text",
+            "score": None,
+        }
+
+        return [doc]
+
+
+import os
+from pathlib import Path
+from typing import Optional, List, Dict, Any
+import fitz
+from paddleocr import PaddleOCR
+
+
+class PDFToTextImgOCRConverter:
+    def __init__(self, language: str = "ch"):
+        self.language = language
+        self.ocr = PaddleOCR(use_angle_cls=True, lang="ch", use_gpu=False)
+
+    def convert(
+            self,
+            file_path: Path,
+            meta: Optional[Dict[str, str]] = None
+    ) -> List[Dict[str, Any]]:
+        file_path = Path(file_path)
+        cleaned_text = ""
+        doc = fitz.open(file_path)
+
+        for i in range(len(doc)):
+            page = doc[i]
+            text = page.get_text()  # Extract text from PDF
+            cleaned_text += text + "\n"
+            # Extract images and perform OCR
+            img_list = page.get_images(full=True)
+            ocr_texts = []
+            for img in img_list:
+                xref = img[0]
+                base = img[1]
+                img_name = f"{file_path.stem}_{base}_{xref}.png"
+                pix = fitz.Pixmap(doc, xref)
+                if pix.n < 5:  # this is GRAY or RGB
+                    pix.save(img_name, "png")
+                else:  # CMYK: convert to RGB first
+                    pix1 = fitz.Pixmap(fitz.csRGB, pix)
+                    pix1.save(img_name, "png")
+                    pix1 = None
+                pix = None
+                # perform ocr on the image
+                result = self.ocr.ocr(img_name, cls=True)
+                ocr_text = "\n".join(["".join(line[-1][0]) for line in result[0]])
+                cleaned_text += ocr_text + "\n"
+                os.remove(img_name)
+        document = {"content": cleaned_text, "content_type": "text", "meta": meta}
+        return [document]
+

@@ -33,6 +33,10 @@ OpenSearchDocumentStore = safe_import(
     "pipelines.document_stores.elasticsearch", "OpenSearchDocumentStore", "elasticsearch"
 )
 
+LocalFileDocumentStore = safe_import(
+    "pipelines.document_stores.local_store", "LocalFileDocumentStore", "localstore"
+)
+
 FAISSDocumentStore = safe_import("pipelines.document_stores.faiss", "FAISSDocumentStore", "faiss")
 
 MilvusDocumentStore = safe_import("pipelines.document_stores.milvus2", "Milvus2DocumentStore", "milvus")
