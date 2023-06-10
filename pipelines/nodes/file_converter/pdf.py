@@ -30,7 +30,7 @@ except (ImportError, ModuleNotFoundError) as ie:
     _optional_component_not_installed(__name__, "ocr", ie)
 
 from pipelines.nodes.file_converter import BaseConverter, ImageToTextConverter
-
+from pipelines.utils.teixml_parser import parse_tei_xml
 logger = logging.getLogger(__name__)
 
 
@@ -318,8 +318,8 @@ class PDFToTextGROBIDConverter(BaseConverter):
 
         converted_text_str = parsed_pdf[0].text.replace('<?xml version="1.0" encoding="UTF-8"?>', '')
 
-        root = etree.fromstring(converted_text_str)
-        text = ''.join(root.itertext())
+        text = parse_tei_xml(converted_text_str)
+
         # Create the output document
         doc = {
             "content": text,
